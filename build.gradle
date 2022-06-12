@@ -30,7 +30,7 @@ allprojects {
     jar {
         manifest {
             attributes(
-                    "Main-Class" : project.name.capitalize(),
+                    "Main-Class" : 'org.example.Main',
                     "Class-Path": configurations.runtimeClasspath.resolve().collect { it.toURI() }.join(' ')
             )
         }

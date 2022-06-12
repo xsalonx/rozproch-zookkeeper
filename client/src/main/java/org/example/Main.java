@@ -1,6 +1,6 @@
 package org.example;
 
-public class Client {
+public class Main {
     public static void main(String[] args) {
         System.out.println("Hello world!");
     }
