@@ -1,0 +1,39 @@
+
+//        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
+//        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
+
+//        runtimeOnly 'org.apache.zookeeper:zookeeper:3.8.0'
+//        runtimeOnly 'org.slf4j:slf4j-api:1.7.25'
+//        runtimeOnly 'org.slf4j:slf4j-log4j12:1.7.25'
+//        runtimeOnly 'log4j:log4j:1.2.17'
+group 'helloworld'
+version '1.0-SNAPSHOT'
+
+dependencies {
+    project(':server')
+    project(':client')
+}
+
+allprojects {
+    apply plugin: 'java'
+    repositories {
+        mavenCentral()
+    }
+
+    dependencies {
+        runtimeOnly 'org.apache.zookeeper:zookeeper:3.8.0'
+        runtimeOnly 'org.slf4j:slf4j-api:1.7.25'
+        runtimeOnly 'org.slf4j:slf4j-log4j12:1.7.25'
+        runtimeOnly 'log4j:log4j:1.2.17'
+    }
+
+    jar {
+        manifest {
+            attributes(
+                    "Main-Class" : project.name.capitalize(),
+                    "Class-Path": configurations.runtimeClasspath.resolve().collect { it.toURI() }.join(' ')
+            )
+        }
+        from configurations.runtimeClasspath.collect {it.isDirectory() ? it : zipTree(it)}
+    }
+}
