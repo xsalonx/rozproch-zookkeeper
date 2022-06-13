@@ -44,3 +44,6 @@ bin/
 .idea
 **/build
 gradle
+
+azbin*
+tmp

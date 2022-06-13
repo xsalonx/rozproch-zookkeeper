@@ -1,15 +1,22 @@
 
-//        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
-//        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
-
-//        runtimeOnly 'org.apache.zookeeper:zookeeper:3.8.0'
-//        runtimeOnly 'org.slf4j:slf4j-api:1.7.25'
-//        runtimeOnly 'org.slf4j:slf4j-log4j12:1.7.25'
-//        runtimeOnly 'log4j:log4j:1.2.17'
-group 'helloworld'
+group 'roz-zookeeper'
 version '1.0-SNAPSHOT'
 
+configurations {
+    zoo
+}
+
+//dependencies {
+////     slf'org.slf4j:slf4j-api:1.7.25'
+////     'org.slf4j:slf4j-log4j12:1.7.25'
+////     'log4j:log4j:1.2.17'
+//}
+
+
+
 dependencies {
+//    zoo 'org.apache.zookeeper:zookeeper:3.7.1'
+
     project(':server')
     project(':client')
 }
@@ -21,19 +28,39 @@ allprojects {
     }
 
     dependencies {
-        runtimeOnly 'org.apache.zookeeper:zookeeper:3.8.0'
-        runtimeOnly 'org.slf4j:slf4j-api:1.7.25'
-        runtimeOnly 'org.slf4j:slf4j-log4j12:1.7.25'
-        runtimeOnly 'log4j:log4j:1.2.17'
+        compileOnly 'org.apache.zookeeper:zookeeper:3.7.1'
+        compileOnly 'org.slf4j:slf4j-api:1.7.25'
+        compileOnly 'org.slf4j:slf4j-log4j12:1.7.25'
+        compileOnly 'log4j:log4j:1.2.17'
     }
 
     jar {
+        duplicatesStrategy = 'include'
         manifest {
             attributes(
                     "Main-Class" : 'org.example.Main',
-                    "Class-Path": configurations.runtimeClasspath.resolve().collect { it.toURI() }.join(' ')
+                    "Class-Path": configurations.compileClasspath.resolve().collect { it.toURI() }.join(' ')
             )
         }
-        from configurations.runtimeClasspath.collect {it.isDirectory() ? it : zipTree(it)}
+        from configurations.compileClasspath.collect {it.isDirectory() ? it : zipTree(it)}
+    }
+}
+
+build {
+    doLast {
+        exec {
+            workingDir './'
+            commandLine 'tar', '-zxvf', "apache-zookeeper-3.7.1-bin.tar.gz", '--one-top-level=azbin'
+        }
+    }
+}
+
+
+clean {
+    doLast {
+        exec {
+            workingDir './'
+            commandLine 'rm', '-rf', 'azbin'
+        }
     }
 }
