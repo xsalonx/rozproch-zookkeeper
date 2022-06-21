@@ -47,3 +47,6 @@ gradle
 
 azbin*
 tmp
+
+**version-2
+**zookeeper_Server.pid

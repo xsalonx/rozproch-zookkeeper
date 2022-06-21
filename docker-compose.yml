@@ -21,10 +21,7 @@ services:
         read_only: false
         source: ./dataDirs
         target: /zoo/dataDirs
-      - type: bind
-        read_only: true
-        source: ./server/build/libs/server.jar
-        target: /zoo/server.jar
+
     
     networks:
       zookeeper-network:
@@ -53,10 +50,6 @@ services:
         read_only: false
         source: ./dataDirs
         target: /zoo/dataDirs
-      - type: bind
-        read_only: true
-        source: ./server/build/libs/server.jar
-        target: /zoo/server.jar
 
     networks:
       zookeeper-network:
@@ -85,10 +78,6 @@ services:
         read_only: false
         source: ./dataDirs
         target: /zoo/dataDirs
-      - type: bind
-        read_only: true
-        source: ./server/build/libs/server.jar
-        target: /zoo/server.jar
 
     networks:
       zookeeper-network:
@@ -117,10 +106,7 @@ services:
         read_only: false
         source: ./dataDirs
         target: /zoo/dataDirs
-      - type: bind
-        read_only: true
-        source: ./server/build/libs/server.jar
-        target: /zoo/server.jar
+
 
     networks:
       zookeeper-network:
@@ -128,37 +114,6 @@ services:
 
     entrypoint: /zoo/scripts/runServer.sh --config /zoo/conf/4 start-foreground
 
-  zoo5:
-    image: openjdk
-    stdin_open: true
-    tty: true
-    volumes:
-      - type: bind
-        read_only: false
-        source: ./azbin
-        target: /zoo/azbin
-      - type: bind
-        read_only: true
-        source: ./scripts
-        target: /zoo/scripts
-      - type: bind
-        read_only: false
-        source: ./conf
-        target: /zoo/conf
-      - type: bind
-        read_only: false
-        source: ./dataDirs
-        target: /zoo/dataDirs
-      - type: bind
-        read_only: true
-        source: ./server/build/libs/server.jar
-        target: /zoo/server.jar
-
-    networks:
-      zookeeper-network:
-        ipv4_address: 172.200.202.6
-
-    entrypoint: /zoo/scripts/runServer.sh --config /zoo/conf/5 start-foreground
 
 
 

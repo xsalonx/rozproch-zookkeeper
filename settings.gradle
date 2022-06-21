@@ -1,4 +1,3 @@
 rootProject.name = 'zookeeper'
-include 'client'
-include 'server'
+
 
