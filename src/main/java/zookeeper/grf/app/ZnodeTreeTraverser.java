@@ -51,7 +51,7 @@ public class ZnodeTreeTraverser {
     }
 
     public static List<String> listTree(ZooKeeper zk, String path) throws InterruptedException, KeeperException {
-        return (List<String>) traversTree(zk, path, (res_, descendants) -> {
+        List<String> res__ =  (List<String>) traversTree(zk, path, (res_, descendants) -> {
             List<String> res;
             if (res_ != null) {
                 res = (List<String>) res_;
@@ -61,11 +61,13 @@ public class ZnodeTreeTraverser {
             res.addAll(descendants);
             return res;
         });
+        res__.add(path);
+        return res__;
     }
 
 
     public static List<String> listTreeCount(ZooKeeper zk, String path) throws InterruptedException, KeeperException {
-        return (List<String>) traversTree(zk, path, (res_, descendants) -> {
+        List<String> res__ =  (List<String>) traversTree(zk, path, (res_, descendants) -> {
             List<String> res;
             if (res_ != null) {
                 res = (List<String>) res_;
@@ -83,5 +85,8 @@ public class ZnodeTreeTraverser {
             }).collect(Collectors.toList()));
             return res;
         });
+
+        res__.add(path + " :: " + countDescendants(zk, path));
+        return res__;
     }
 }

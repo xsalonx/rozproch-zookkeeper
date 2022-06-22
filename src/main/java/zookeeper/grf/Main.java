@@ -45,16 +45,21 @@ public class Main {
 
     private static Watcher defaultWatcher = System.out::println;
     private static AsyncCallback.Create2Callback defCb = (rc, path, ctx, name, stat) -> {
-        System.out.println(rc);
-        System.out.println(path);
-        System.out.println(ctx);
-        System.out.println(name);
-        System.out.println(stat);
+        System.out.println("callback: " + rc + " " + path + " " + ctx + " " + name + " " + stat);
+        for (TaskManager tm : tasksMan) {
+            if (path.startsWith(tm.getZnode())) {
+                try {
+                    for (String s : ZnodeTreeTraverser.listTreeCount(mainZk, tm.getZnode())) {
+                        System.out.println(s);
+                    }
+                } catch (InterruptedException | KeeperException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
     };
     private static AsyncCallback.VoidCallback defVCb = (rc, path, ctx) -> {
-        System.out.println(rc);
-        System.out.println(path);
-        System.out.println(ctx);
+        System.out.println("callback: " + rc + " " + path + " " + ctx);
     };
 
     public static void main(String[] args) {
@@ -184,7 +189,7 @@ public class Main {
         throw new RuntimeException("not implemented");
     }
 
-    private static void newTask(String cmd, String[] cmdAndParams) throws IOException, InterruptedException, KeeperException {
+    private static void newTask(String cmd, String[] cmdAndParams) throws Exception {
         String[] exec = new String[cmdAndParams.length - 2];
         System.arraycopy(cmdAndParams, 2, exec, 0, exec.length);
         TaskManager tm = new TaskManager(host_port, cmdAndParams[1], String.join(" ", exec));

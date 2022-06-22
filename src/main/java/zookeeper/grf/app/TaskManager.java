@@ -4,9 +4,12 @@ import org.apache.zookeeper.*;
 import org.apache.zookeeper.data.Stat;
 import zookeeper.grf.Main;
 
-import java.io.IOException;
 
-public class TaskManager implements Runnable, Watcher, AsyncCallback.StatCallback, AsyncCallback.VoidCallback {
+public class TaskManager implements
+        Runnable,
+        Watcher,
+        AsyncCallback.StatCallback
+{
 
     private String hostPort;
     private Process child;
@@ -18,12 +21,13 @@ public class TaskManager implements Runnable, Watcher, AsyncCallback.StatCallbac
     private Thread runTh;
 
 
-    public TaskManager(String hostPort, String znode, String exec) throws IOException, InterruptedException, KeeperException {
+    public TaskManager(String hostPort, String znode, String exec) throws Exception {
         this.exec = exec;
         this.hostPort = hostPort;
         this.znode = znode;
         this.end = false;
         this.zk = new ZooKeeper(hostPort, 3000, this);
+
         zk.addWatch(znode, this, AddWatchMode.PERSISTENT_RECURSIVE);
         runTh = new Thread(this);
         runTh.start();
@@ -32,6 +36,7 @@ public class TaskManager implements Runnable, Watcher, AsyncCallback.StatCallbac
     @Override
     public void run() {
         zk.exists(znode, true, this, null);
+
         try {
             while (!end) {
                 synchronized (this) {
@@ -65,10 +70,12 @@ public class TaskManager implements Runnable, Watcher, AsyncCallback.StatCallbac
     }
 
 
+
     @Override
     public void process(WatchedEvent event) {
         String path = event.getPath();
         System.out.println(event);
+        System.out.println("event");
         if (event.getType() == Event.EventType.None) {
             switch (event.getState()) {
                 case SyncConnected:
@@ -77,7 +84,19 @@ public class TaskManager implements Runnable, Watcher, AsyncCallback.StatCallbac
                     end = true;
                     break;
             }
-        } else {
+        } else if (event.getType() == Event.EventType.NodeDeleted && !event.getPath().equals(znode)) {
+            try {
+                for (String s : ZnodeTreeTraverser.listTreeCount(zk, znode)) {
+                    System.out.println(s);
+                }
+            } catch (InterruptedException | KeeperException e) {
+                e.printStackTrace();
+            }
+        }
+//        else if (event.getType() == Event.EventType.NodeCreated) {
+//            System.out.println("node created");
+//        }
+        else {
             if (path != null && path.equals(znode)) {
                 zk.exists(znode, true, this, null);
             }
@@ -88,7 +107,7 @@ public class TaskManager implements Runnable, Watcher, AsyncCallback.StatCallbac
     public void manageProcess(boolean ex) {
         if (!ex) {
             if (child != null) {
-                System.out.println("Killing child");
+                System.out.println("Killing process");
                 child.destroy();
                 try {
                     child.waitFor();
@@ -99,7 +118,7 @@ public class TaskManager implements Runnable, Watcher, AsyncCallback.StatCallbac
             }
         } else {
             if (child != null) {
-                System.out.println("Rerun child");
+                System.out.println("Rerun process");
 
                 child.destroy();
                 try {
@@ -110,7 +129,7 @@ public class TaskManager implements Runnable, Watcher, AsyncCallback.StatCallbac
             }
             try {
                 child = Runtime.getRuntime().exec(exec);
-            } catch (IOException e) {
+            } catch (Exception e) {
                 e.printStackTrace();
             }
         }
@@ -134,18 +153,14 @@ public class TaskManager implements Runnable, Watcher, AsyncCallback.StatCallbac
         return "TaskManager{" +
                 "hostPort='" + hostPort + '\'' +
                 ", child=" + child +
-//                ", zk=" + zk +
                 ", exec='" + exec + '\'' +
                 ", znode='" + znode + '\'' +
                 ", end=" + end +
                 '}';
     }
 
-    @Override
-    public void processResult(int rc, String path, Object ctx) {
-        System.out.println("task manages void callback");
-        System.out.println(rc);
-        System.out.println(path);
-        System.out.println(ctx);
+
+    public String getZnode() {
+        return znode;
     }
 }
