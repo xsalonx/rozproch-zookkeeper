@@ -2,7 +2,6 @@ package zookeeper.grf.app;
 
 import org.apache.zookeeper.*;
 import org.apache.zookeeper.data.Stat;
-import org.example.zoo.Executor;
 import zookeeper.grf.Main;
 
 import java.io.IOException;
@@ -14,7 +13,6 @@ public class TaskManager implements Runnable, Watcher, AsyncCallback.StatCallbac
     private ZooKeeper zk;
     private String exec;
     private String znode;
-
     private boolean end;
 
     private Thread runTh;

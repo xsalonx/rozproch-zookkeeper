@@ -1,23 +1,62 @@
 package zookeeper.grf;
 
-import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.WatchedEvent;
-import org.apache.zookeeper.Watcher;
-import org.apache.zookeeper.ZooKeeper;
+import org.apache.zookeeper.*;
+import org.apache.zookeeper.data.ACL;
+import org.apache.zookeeper.data.Stat;
 import zookeeper.grf.app.TaskManager;
+import zookeeper.grf.app.ZnodeTreeTraverser;
 
 import java.io.IOException;
+import java.nio.file.attribute.AclEntryFlag;
+import java.nio.file.attribute.AclEntryPermission;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
 
 public class Main {
 
+    enum ZCMD {
+        HELP("help"),
+        CONN("conn"),
+        CLOSE("close"),
+
+        LS_TASKS("ls-tasks"),
+        KILL_TASKS("kill-tasks"),
+        NEW_TASK("new-t"),
+
+        CREATE("create"),
+        DELETE("delete"),
+        COUNT("count"),
+        LS_ZNODE("ls-z"),
+        LS_TREE("ls-tree"),
+        LS_TREE_count("ls-tree-count"),
+        ZNODE_INSIGHT("z-in");
+
+        public final String cmd;
+        ZCMD(String cmd) {
+            this.cmd = cmd;
+        }
+    }
+
     private static final ArrayList<TaskManager> tasksMan = new ArrayList<>();
 
     private static String host_port;
     private static ZooKeeper mainZk;
+
+    private static Watcher defaultWatcher = System.out::println;
+    private static AsyncCallback.Create2Callback defCb = (rc, path, ctx, name, stat) -> {
+        System.out.println(rc);
+        System.out.println(path);
+        System.out.println(ctx);
+        System.out.println(name);
+        System.out.println(stat);
+    };
+    private static AsyncCallback.VoidCallback defVCb = (rc, path, ctx) -> {
+        System.out.println(rc);
+        System.out.println(path);
+        System.out.println(ctx);
+    };
+
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
         String cmd = "";
@@ -26,24 +65,52 @@ public class Main {
             cmd = scanner.nextLine().trim();
             String[] cmdAndParams = cmd.split(" +");
 
-
             try {
-                if ("conn".equals(cmdAndParams[0])) {
+                if (ZCMD.HELP.cmd.equals(cmd)) {
+                    for (ZCMD zcmd : ZCMD.values()) {
+                        System.out.println(zcmd.cmd);
+                    }
+                }
+
+                else if (ZCMD.CONN.cmd.equals(cmdAndParams[0])) {
                     setupConnection(cmd, cmdAndParams);
-                } else if ("lst".equals(cmd)) {
+                } else if ("close".equals(cmd)) {
+                    close();
+                }
+
+                else if (ZCMD.LS_TASKS.cmd.equals(cmd)) {
                     listTasks(cmd, cmdAndParams);
-                } else if ("kt".equals(cmdAndParams[0])) {
+                } else if (ZCMD.KILL_TASKS.cmd.equals(cmdAndParams[0])) {
                     killTask(cmd, cmdAndParams);
-                } else if ("lsz".equals(cmdAndParams[0])) {
-                    listNodes(cmd, cmdAndParams);
-                } else if ("desc".equals(cmdAndParams[0])) {
-                    descendantsInsight(cmd, cmdAndParams);
-                } else if ("new".equals(cmdAndParams[0])) {
+                } else if (ZCMD.NEW_TASK.cmd.equals(cmdAndParams[0])) {
                     newTask(cmd, cmdAndParams);
+                }
+
+                else if (ZCMD.CREATE.cmd.equals(cmdAndParams[0])) {
+                    create(cmd, cmdAndParams);
+                } else if (ZCMD.DELETE.cmd.equals(cmdAndParams[0])) {
+                    delete(cmd, cmdAndParams);
+                } else if (ZCMD.COUNT.cmd.equals(cmdAndParams[0])) {
+                    System.out.println(ZnodeTreeTraverser.countDescendants(mainZk, cmdAndParams[1]));
+                }  else if (ZCMD.LS_ZNODE.cmd.equals(cmdAndParams[0])) {
+                    for (String s : ZnodeTreeTraverser.getChildrenWithPaths(mainZk, cmdAndParams[1])) {
+                        System.out.println(s);
+                    }
+                } else if (ZCMD.LS_TREE.cmd.equals(cmdAndParams[0])) {
+                    for (String s : ZnodeTreeTraverser.listTree(mainZk, cmdAndParams[1])) {
+                        System.out.println(s);
+                    }
+                } else if (ZCMD.LS_TREE_count.cmd.equals(cmdAndParams[0])) {
+                    for (String s : ZnodeTreeTraverser.listTreeCount(mainZk, cmdAndParams[1])) {
+                        System.out.println(s);
+                    }
+                }
+
+                else if (ZCMD.ZNODE_INSIGHT.cmd.equals(cmdAndParams[0])) {
+                    znodeInsight(cmd, cmdAndParams);
                 } else if (!"".equals(cmd)){
                     throw new RuntimeException("incorrect command");
                 }
-
 
             } catch (Exception e) {
                 e.printStackTrace();
@@ -54,9 +121,7 @@ public class Main {
 
 
     private static void setupConnection(String cmd, String[] cmdAndParams) throws InterruptedException {
-        if (mainZk != null) {
-            mainZk.close();
-        }
+        close();
         boolean connected = false;
         while (!connected) {
             try {
@@ -65,14 +130,35 @@ public class Main {
                 } else {
                     host_port = cmdAndParams[1];
                 }
-                mainZk = new ZooKeeper(host_port, 3000, System.out::println);
+                mainZk = new ZooKeeper(host_port, 3000, defaultWatcher);
                 connected = true;
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
     }
+    private static void close() throws InterruptedException {
+        if (mainZk != null) {
+            mainZk.close();
+            killAllTasks();
+        }
+    }
+
+    private static void create(String cmd, String[] cmdAndParams) throws InterruptedException, KeeperException {
+        mainZk.create(cmdAndParams[1],
+                new byte[0],
+                ZooDefs.Ids.OPEN_ACL_UNSAFE,
+                CreateMode.PERSISTENT,
+                defCb,
+                null);
+    }
+    private static void delete(String cmd, String[] cmdAndParams) {
+        mainZk.delete(cmdAndParams[1], -1, defVCb, null);
+    }
     private static void listTasks(String cmd, String[] cmdAndParams) {
+        if (tasksMan.isEmpty()) {
+            System.out.println("no running tasks");
+        }
         for (int i = 0; i < tasksMan.size(); i++) {
             System.out.println(i + " : " + tasksMan.get(i));
         }
@@ -94,7 +180,7 @@ public class Main {
         List<String> res = mainZk.getChildren(cmdAndParams[1], false);
         System.out.println(res);
     }
-    private static void descendantsInsight(String cmd, String[] cmdAndParams) {
+    private static void znodeInsight(String cmd, String[] cmdAndParams) {
         throw new RuntimeException("not implemented");
     }
 
@@ -105,21 +191,3 @@ public class Main {
         tasksMan.add(tm);
     }
 }
-
-
-//        if (args.length < 4) {
-//            System.err
-//                    .println("USAGE: Executor hostPort znode program [args ...]");
-//            System.exit(2);
-//        }
-//        String hostPort = args[0];
-//        String znode = args[1];
-//        String filename = args[2];
-//        String[] exec = new String[args.length - 3];
-//        System.arraycopy(args, 3, exec, 0, exec.length);
-//        try {
-//            System.out.println(Arrays.toString(args));
-//            new Executor(hostPort, znode, filename, exec).run();
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        }
