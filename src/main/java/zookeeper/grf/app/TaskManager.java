@@ -6,7 +6,7 @@ import zookeeper.grf.Main;
 
 import java.io.IOException;
 
-public class TaskManager implements Runnable, Watcher, AsyncCallback.StatCallback {
+public class TaskManager implements Runnable, Watcher, AsyncCallback.StatCallback, AsyncCallback.VoidCallback {
 
     private String hostPort;
     private Process child;
@@ -18,12 +18,13 @@ public class TaskManager implements Runnable, Watcher, AsyncCallback.StatCallbac
     private Thread runTh;
 
 
-    public TaskManager(String hostPort, String znode, String exec) throws IOException {
+    public TaskManager(String hostPort, String znode, String exec) throws IOException, InterruptedException, KeeperException {
         this.exec = exec;
         this.hostPort = hostPort;
         this.znode = znode;
         this.end = false;
         this.zk = new ZooKeeper(hostPort, 3000, this);
+        zk.addWatch(znode, this, AddWatchMode.PERSISTENT_RECURSIVE);
         runTh = new Thread(this);
         runTh.start();
     }
@@ -33,7 +34,6 @@ public class TaskManager implements Runnable, Watcher, AsyncCallback.StatCallbac
         zk.exists(znode, true, this, null);
         try {
             while (!end) {
-                System.out.println("while loop");
                 synchronized (this) {
                     wait();
                 }
@@ -42,7 +42,6 @@ public class TaskManager implements Runnable, Watcher, AsyncCallback.StatCallbac
             e.printStackTrace();
         }
 
-        System.out.println("ending task: " + this);
     }
 
     @Override
@@ -62,7 +61,7 @@ public class TaskManager implements Runnable, Watcher, AsyncCallback.StatCallbac
                 zk.exists(znode, true, this, null);
                 return;
         }
-        manageChild(exists);
+        manageProcess(exists);
     }
 
 
@@ -86,7 +85,7 @@ public class TaskManager implements Runnable, Watcher, AsyncCallback.StatCallbac
     }
 
 
-    public void manageChild(boolean ex) {
+    public void manageProcess(boolean ex) {
         if (!ex) {
             if (child != null) {
                 System.out.println("Killing child");
@@ -140,5 +139,13 @@ public class TaskManager implements Runnable, Watcher, AsyncCallback.StatCallbac
                 ", znode='" + znode + '\'' +
                 ", end=" + end +
                 '}';
+    }
+
+    @Override
+    public void processResult(int rc, String path, Object ctx) {
+        System.out.println("task manages void callback");
+        System.out.println(rc);
+        System.out.println(path);
+        System.out.println(ctx);
     }
 }

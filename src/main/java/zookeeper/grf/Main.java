@@ -184,7 +184,7 @@ public class Main {
         throw new RuntimeException("not implemented");
     }
 
-    private static void newTask(String cmd, String[] cmdAndParams) throws IOException {
+    private static void newTask(String cmd, String[] cmdAndParams) throws IOException, InterruptedException, KeeperException {
         String[] exec = new String[cmdAndParams.length - 2];
         System.arraycopy(cmdAndParams, 2, exec, 0, exec.length);
         TaskManager tm = new TaskManager(host_port, cmdAndParams[1], String.join(" ", exec));
