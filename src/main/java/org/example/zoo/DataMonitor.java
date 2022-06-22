@@ -12,7 +12,8 @@ import org.apache.zookeeper.AsyncCallback.StatCallback;
 import org.apache.zookeeper.KeeperException.Code;
 import org.apache.zookeeper.data.Stat;
 
-public class DataMonitor implements Watcher, StatCallback {
+public class DataMonitor implements Watcher, StatCallback
+{
 
     ZooKeeper zk;
     String znode;
@@ -39,7 +40,7 @@ public class DataMonitor implements Watcher, StatCallback {
         /**
          * The existence status of the node has changed.
          */
-        void exists(byte data[]);
+        void existanceChange(byte data[]);
 
         /**
          * The ZooKeeper session is no longer valid.
@@ -113,7 +114,7 @@ public class DataMonitor implements Watcher, StatCallback {
         }
         if ((b == null && b != prevData)
                 || (b != null && !Arrays.equals(prevData, b))) {
-            listener.exists(b);
+            listener.existanceChange(b);
             prevData = b;
         }
     }

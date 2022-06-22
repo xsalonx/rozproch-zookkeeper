@@ -22,13 +22,11 @@ public class Executor
     String znode;
     DataMonitor dm;
     ZooKeeper zk;
-    String filename;
     String[] exec;
     Process child;
 
     public Executor(String hostPort, String znode, String filename,
                     String[] exec) throws KeeperException, IOException {
-        this.filename = filename;
         this.exec = exec;
         this.zk = new ZooKeeper(hostPort, 3000, this);
         this.dm = new DataMonitor(zk, znode, null, this);
@@ -79,7 +77,7 @@ public class Executor
         }
     }
 
-    public void exists(byte[] data) {
+    public void existanceChange(byte[] data) {
         if (data == null) {
             if (child != null) {
                 System.out.println("Killing process");
@@ -101,13 +99,7 @@ public class Executor
                     e.printStackTrace();
                 }
             }
-            try {
-                FileOutputStream fos = new FileOutputStream(filename);
-                fos.write(data);
-                fos.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+
             try {
                 System.out.println("Starting child");
                 child = Runtime.getRuntime().exec(exec);
